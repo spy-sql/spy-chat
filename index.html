@@ -2,99 +2,56 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SPY Chat - Global Room</title>
+    <title>SPY Chat</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <style>
-        * { box-sizing: border-box; }
-        body { 
-            margin: 0; 
-            background-color: #050911; 
-            color: #fff; 
-            font-family: 'Courier New', Courier, monospace; 
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-
-        #chat-container { 
-            width: 100%; 
-            max-width: 800px; 
-            height: 90vh; 
-            background: #0b111e; 
-            border: 2px solid #00f2ff; 
-            border-radius: 8px; 
-            display: flex; 
-            flex-direction: column; 
-            box-shadow: 0 0 25px rgba(0, 242, 255, 0.25); 
-        }
-
-        #chat-header { 
-            background: #101a2c; 
-            padding: 15px; 
-            font-weight: bold; 
-            font-size: 16px;
-            color: #00f2ff; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            border-bottom: 2px solid #00f2ff;
-        }
-
-        #chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-
-        .msg { background: #131c2e; padding: 12px; border-radius: 6px; border-left: 4px solid #ff00ea; }
-        .msg .user { color: #00f2ff; font-weight: bold; font-size: 12px; margin-bottom: 5px; }
-
-        #chat-input-area { display: flex; padding: 15px; gap: 10px; border-top: 1px solid #1a263f; background: #0b111e; }
-        #chat-username { width: 120px; background: #131c2e; border: 1px solid #1a263f; color: #00f2ff; padding: 12px; }
-        #chat-text { flex: 1; background: #131c2e; border: 1px solid #00f2ff; color: #fff; padding: 12px; }
-        #chat-send { background: #00f2ff; border: none; color: #050911; padding: 0 25px; cursor: pointer; }
+        body { background-color: #050911; color: #fff; font-family: monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        #chat-container { width: 800px; height: 90vh; border: 2px solid #00f2ff; display: flex; flex-direction: column; background: #0b111e; }
+        #chat-messages { flex: 1; padding: 20px; overflow-y: auto; }
+        .msg { margin-bottom: 10px; border-left: 3px solid #ff00ea; padding-left: 10px; }
+        #chat-input-area { display: flex; padding: 10px; border-top: 1px solid #00f2ff; }
+        input, button { padding: 10px; background: #131c2e; border: 1px solid #00f2ff; color: #fff; }
+        input { flex: 1; }
     </style>
 </head>
 <body>
 
-    <div id="chat-container">
-        <div id="chat-header">⚡ SPY NET CHAT // GLOBAL_ROOM</div>
-        <div id="chat-messages"></div>
-        <div id="chat-input-area">
-            <input type="text" id="chat-username" value="Spy_">
-            <input type="text" id="chat-text" placeholder="Mesajınız..." onkeypress="if(event.key==='Enter') sendMessage()">
-            <button id="chat-send" onclick="sendMessage()">GÖNDER</button>
-        </div>
+<div id="chat-container">
+    <div id="chat-messages"></div>
+    <div id="chat-input-area">
+        <input type="text" id="username" value="Spy_" style="width: 100px;">
+        <input type="text" id="message" placeholder="Mesaj yaz...">
+        <button onclick="sendMessage()">GÖNDER</button>
     </div>
+</div>
 
-    <script>
-        const SUPABASE_URL = "https://fgfqczltsnwybvduecbs.supabase.co"; 
-        const SUPABASE_KEY = "sb_publishable_vhHGhg9CqIMjrrOwdVwFeg_vEBQGArF"; 
-        
-        // Değişken ismi 'mySupabase' olarak değiştirildi
-        const mySupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<script>
+    // 1. İsim çakışmasını önlemek için 'supabaseClient' ismini kullandık
+    const supabaseClient = window.supabase.createClient(
+        "https://fgfqczltsnwybvduecbs.supabase.co", 
+        "sb_publishable_vhHGhg9CqIMjrrOwdVwFeg_vEBQGArF"
+    );
 
-        async function sendMessage() {
-            const userInp = document.getElementById('chat-username').value;
-            const textInp = document.getElementById('chat-text').value;
-            
-            if(!textInp.trim()) return;
+    async function sendMessage() {
+        const user = document.getElementById('username').value;
+        const text = document.getElementById('message').value;
+        if(!text.trim()) return;
 
-            await mySupabase.from('messages').insert([{ username: userInp, text: textInp }]);
-            document.getElementById('chat-text').value = '';
-        }
+        await supabaseClient.from('messages').insert([{ username: user, text: text }]);
+        document.getElementById('message').value = '';
+    }
 
-        async function fetchMessages() {
-            const { data } = await mySupabase.from('messages').select('*').order('id', { ascending: true });
-            if (data) {
-                const container = document.getElementById('chat-messages');
-                container.innerHTML = data.map(m => `<div class="msg"><div class="user">> ${m.username}</div><div>${m.text}</div></div>`).join('');
-                container.scrollTop = container.scrollHeight;
-            }
-        }
+    async function fetchMessages() {
+        const { data } = await supabaseClient.from('messages').select('*').order('id', { ascending: true });
+        const container = document.getElementById('chat-messages');
+        container.innerHTML = data.map(m => `<div class="msg"><b>${m.username}:</b> ${m.text}</div>`).join('');
+        container.scrollTop = container.scrollHeight;
+    }
 
-        mySupabase.channel('public:messages').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, fetchMessages).subscribe();
-        
-        fetchMessages();
-    </script>
+    // Gerçek zamanlı dinleyici
+    supabaseClient.channel('any').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, fetchMessages).subscribe();
+
+    fetchMessages();
+</script>
 </body>
 </html>
