@@ -33,20 +33,31 @@
         "sb_publishable_vhHGhg9CqIMjrrOwdVwFeg_vEBQGArF"
     );
 
-    // 1. İsimi Hatırlama
+    // İsim sabitleme mantığı
     const usernameInput = document.getElementById('username');
-    usernameInput.value = localStorage.getItem('spy_username') || '';
+    const savedName = localStorage.getItem('spy_username');
+    if (savedName) {
+        usernameInput.value = savedName;
+        usernameInput.disabled = true; // İsmi değiştiremesin
+    }
 
     let userId = localStorage.getItem('spy_uid') || 'U-' + Math.floor(Math.random()*10000);
     localStorage.setItem('spy_uid', userId);
     let isAdmin = localStorage.getItem('is_admin') === 'true';
 
-    function loginAdmin() {
+    async function sha256(message) {
+        const msgBuffer = new TextEncoder().encode(message);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function loginAdmin() {
         const pass = prompt("Admin Şifresini Girin:");
-        if (pass === "spy1232IıIıııIIIIıııIII3") {
+        const hashedInput = await sha256(pass);
+        if (hashedInput === "b0ffff3c2299551401bdfcf35ea9be8283c0aab612cc0241c5d813e4f0f2a393") {
             localStorage.setItem('is_admin', 'true');
             isAdmin = true;
-            alert("Admin yetkisi aktif edildi!");
+            alert("Admin yetkisi aktif!");
         } else {
             alert("Hatalı şifre!");
         }
@@ -55,26 +66,16 @@
     async function sendMessage() {
         const user = usernameInput.value.trim();
         const text = document.getElementById('message').value.trim();
-        
-        if(!user || !text) return alert("Rumuz ve mesaj boş bırakılamaz!");
+        if(!user || !text) return;
 
-        // Aynı isim kontrolü: Veritabanında aynı isimde son mesajı kontrol et
-        const { data: existingUser } = await supabaseClient
-            .from('messages')
-            .select('username')
-            .eq('username', user)
-            .limit(1);
-
-        // Not: Basit bir kontrol olduğu için sadece mevcut mesajlar içinde arar.
-        // Daha gelişmişi için ayrı bir 'users' tablosu gerekir.
-        
-        localStorage.setItem('spy_username', user);
+        // İlk defa isim giriyorsa kaydet ve kilitle
+        if (!localStorage.getItem('spy_username')) {
+            localStorage.setItem('spy_username', user);
+            usernameInput.disabled = true;
+        }
 
         await supabaseClient.from('messages').insert([{ 
-            username: user, 
-            text: text,
-            user_id: userId,
-            is_admin: isAdmin 
+            username: user, text: text, user_id: userId, is_admin: isAdmin 
         }]);
         document.getElementById('message').value = '';
     }
