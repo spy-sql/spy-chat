@@ -148,8 +148,7 @@
             </div>
         </div>
         
-        <div id="chat-messages">
-            </div>
+        <div id="chat-messages"></div>
         
         <div id="chat-input-area">
             <input type="text" id="chat-username" placeholder="Rumuz" value="Spy_">
@@ -159,96 +158,89 @@
     </div>
 
     <script>
-       <script>
-    // --- SUPABASE BAĞLANTISI ---
-    const SUPABASE_URL = "https://fgfqczltsnwybvduecbs.supabase.co"; 
-    const SUPABASE_KEY = "sb_publishable_vhHGhg9CqIMjrrOwdVwFeg_vEBQGArF"; 
-    
-    const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
-
-    // Geçici Hafıza
-    let localMessages = [
-        { username: "Sistem", text: "Chat odası başarıyla kuruldu. Mesajlaşmaya başlayabilirsiniz." }
-    ];
-
-    // Mesajları Ekranda Listeleme
-    function renderMessages(msgs) {
-        const container = document.getElementById('chat-messages');
-        if (!container) return;
-        container.innerHTML = '';
-        msgs.forEach(m => {
-            const div = document.createElement('div');
-            div.className = 'msg';
-            div.innerHTML = `<div class="user">> ${m.username}</div><div>${m.text}</div>`;
-            container.appendChild(div);
-        });
-        container.scrollTop = container.scrollHeight;
-    }
-
-    // Mesaj Gönderme Fonksiyonu
-    function sendMessage() {
-        const userInp = document.getElementById('chat-username');
-        const textInp = document.getElementById('chat-text');
+        // --- SUPABASE BAĞLANTISI ---
+        const SUPABASE_URL = "https://fgfqczltsnwybvduecbs.supabase.co"; 
+        const SUPABASE_KEY = "sb_publishable_vhHGhg9CqIMjrrOwdVwFeg_vEBQGArF"; 
         
-        if(!textInp || !textInp.value.trim()) return;
+        const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
-        const newMsg = {
-            username: userInp ? (userInp.value.trim() || "Anonim") : "Anonim",
-            text: textInp.value.trim()
-        };
-
-        if (supabase && SUPABASE_KEY !== "sb_publishable_vhHGhg9CqIMjrrOwdVwFeg_vEBQGArF") {
-            supabase.from('messages').insert([newMsg]).then(() => {
-                fetchMessages();
+        // Mesajları Ekranda Listeleme
+        function renderMessages(msgs) {
+            const container = document.getElementById('chat-messages');
+            if (!container) return;
+            container.innerHTML = '';
+            msgs.forEach(m => {
+                const div = document.createElement('div');
+                div.className = 'msg';
+                div.innerHTML = `<div class="user">> ${m.username}</div><div>${m.text}</div>`;
+                container.appendChild(div);
             });
-        } else {
-            localMessages.push(newMsg);
-            renderMessages(localMessages);
+            container.scrollTop = container.scrollHeight;
         }
-        
-        textInp.value = '';
-    }
 
-    // Enter tuşu kontrolü
-    function handleKeyPress(e) {
-        if (e.key === 'Enter') sendMessage();
-    }
-
-    // Veritabanından Mesajları Çekme
-    async function fetchMessages() {
-        if (supabase && SUPABASE_KEY !== "sb_publishable_vhHGhg9CqIMjrrOwdVwFeg_vEBQGArF") {
-            let { data: messages, error } = await supabase
-                .from('messages')
-                .select('*')
-                .order('id', { ascending: true })
-                .limit(50);
+        // Mesaj Gönderme Fonksiyonu
+        async function sendMessage() {
+            const userInp = document.getElementById('chat-username');
+            const textInp = document.getElementById('chat-text');
             
-            if (messages) renderMessages(messages);
-        }
-    }
+            if(!textInp || !textInp.value.trim()) return;
 
-    // Canlı Dinleme (Realtime)
-    function listenRealtime() {
-        if (supabase && SUPABASE_KEY !== "sb_publishable_vhHGhg9CqIMjrrOwdVwFeg_vEBQGArF") {
-            supabase
-                .channel('public:messages')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                    fetchMessages();
-                })
-                .subscribe();
-        }
-    }
+            const newMsg = {
+                username: userInp ? (userInp.value.trim() || "Anonim") : "Anonim",
+                text: textInp.value.trim()
+            };
 
-    // Sayfa Yüklendiğinde Çalıştır
-    window.onload = () => { 
-        if (supabase && SUPABASE_KEY !== "sb_publishable_vhHGhg9CqIMjrrOwdVwFeg_vEBQGArF") {
-            fetchMessages();
-            listenRealtime();
-        } else {
-            renderMessages(localMessages); 
+            if (supabase) {
+                const { error } = await supabase.from('messages').insert([newMsg]);
+                if (error) {
+                    console.error("Mesaj gönderilirken hata oluştu:", error);
+                }
+            }
+            
+            textInp.value = '';
         }
-    };
-</script>
+
+        // Enter tuşu kontrolü
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') sendMessage();
+        }
+
+        // Veritabanından Mesajları Çekme
+        async function fetchMessages() {
+            if (supabase) {
+                let { data: messages, error } = await supabase
+                    .from('messages')
+                    .select('*')
+                    .order('id', { ascending: true })
+                    .limit(50);
+                
+                if (messages) {
+                    renderMessages(messages);
+                } else if (error) {
+                    console.error("Mesajlar çekilirken hata oluştu:", error);
+                }
+            }
+        }
+
+        // Canlı Dinleme (Realtime)
+        function listenRealtime() {
+            if (supabase) {
+                supabase
+                    .channel('public:messages')
+                    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+                        fetchMessages();
+                    })
+                    .subscribe();
+            }
+        }
+
+        // Sayfa Yüklendiğinde Çalıştır
+        window.onload = () => { 
+            if (supabase) {
+                fetchMessages();
+                listenRealtime();
+            }
+        };
     </script>
 </body>
 </html>
