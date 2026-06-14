@@ -7,7 +7,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
-        /* Siber Temalı CSS Tasarımı */
         * { box-sizing: border-box; }
         body { 
             margin: 0; 
@@ -20,7 +19,6 @@
             height: 100vh;
         }
 
-        /* Ana Chat Penceresi */
         #chat-container { 
             width: 100%; 
             max-width: 800px; 
@@ -33,7 +31,6 @@
             box-shadow: 0 0 25px rgba(0, 242, 255, 0.25); 
         }
 
-        /* Üst Panel (Header) */
         #chat-header { 
             background: #101a2c; 
             padding: 15px; 
@@ -44,203 +41,60 @@
             justify-content: space-between; 
             align-items: center; 
             border-bottom: 2px solid #00f2ff;
-            text-shadow: 0 0 5px rgba(0, 242, 255, 0.5);
         }
 
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            background-color: #39ff14;
-            border-radius: 50%;
-            display: inline-block;
-            box-shadow: 0 0 8px #39ff14;
-        }
+        #chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
 
-        /* Mesaj Alanı */
-        #chat-messages { 
-            flex: 1; 
-            padding: 20px; 
-            overflow-y: auto; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 12px; 
-        }
+        .msg { background: #131c2e; padding: 12px; border-radius: 6px; border-left: 4px solid #ff00ea; }
+        .msg .user { color: #00f2ff; font-weight: bold; font-size: 12px; margin-bottom: 5px; }
 
-        /* Mesaj Kutuları */
-        .msg { 
-            background: #131c2e; 
-            padding: 12px; 
-            border-radius: 6px; 
-            border-left: 4px solid #ff00ea; 
-            word-break: break-word;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-        }
-        
-        .msg .user { 
-            color: #00f2ff; 
-            font-weight: bold; 
-            font-size: 12px; 
-            margin-bottom: 5px; 
-        }
-
-        /* Alt Giriş Paneli */
-        #chat-input-area { 
-            display: flex; 
-            padding: 15px; 
-            gap: 10px; 
-            border-top: 1px solid #1a263f; 
-            background: #0b111e; 
-            border-radius: 0 0 8px 8px;
-        }
-
-        #chat-username { 
-            width: 120px; 
-            background: #131c2e; 
-            border: 1px solid #1a263f; 
-            color: #00f2ff; 
-            padding: 12px; 
-            border-radius: 4px; 
-            font-weight: bold;
-            text-align: center;
-        }
-
-        #chat-text { 
-            flex: 1; 
-            background: #131c2e; 
-            border: 1px solid #00f2ff; 
-            color: #fff; 
-            padding: 12px; 
-            border-radius: 4px; 
-            font-family: inherit;
-        }
-
-        #chat-text:focus {
-            outline: none;
-            box-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
-        }
-
-        #chat-send { 
-            background: #00f2ff; 
-            border: none; 
-            color: #050911; 
-            padding: 0 25px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            border-radius: 4px; 
-            font-family: inherit;
-            transition: all 0.2s;
-        }
-
-        #chat-send:hover { 
-            background: #ff00ea; 
-            color: #fff; 
-            box-shadow: 0 0 10px #ff00ea;
-        }
+        #chat-input-area { display: flex; padding: 15px; gap: 10px; border-top: 1px solid #1a263f; background: #0b111e; }
+        #chat-username { width: 120px; background: #131c2e; border: 1px solid #1a263f; color: #00f2ff; padding: 12px; }
+        #chat-text { flex: 1; background: #131c2e; border: 1px solid #00f2ff; color: #fff; padding: 12px; }
+        #chat-send { background: #00f2ff; border: none; color: #050911; padding: 0 25px; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div id="chat-container">
-        <div id="chat-header">
-            <span>⚡ SPY NET CHAT // GLOBAL_ROOM</span>
-            <div>
-                <span class="status-dot"></span> Online
-            </div>
-        </div>
-        
+        <div id="chat-header">⚡ SPY NET CHAT // GLOBAL_ROOM</div>
         <div id="chat-messages"></div>
-        
         <div id="chat-input-area">
-            <input type="text" id="chat-username" placeholder="Rumuz" value="Spy_">
-            <input type="text" id="chat-text" placeholder="Güvenli mesaj gönder..." onkeypress="handleKeyPress(event)">
+            <input type="text" id="chat-username" value="Spy_">
+            <input type="text" id="chat-text" placeholder="Mesajınız..." onkeypress="if(event.key==='Enter') sendMessage()">
             <button id="chat-send" onclick="sendMessage()">GÖNDER</button>
         </div>
     </div>
 
     <script>
-        // --- SUPABASE BAĞLANTISI ---
         const SUPABASE_URL = "https://fgfqczltsnwybvduecbs.supabase.co"; 
         const SUPABASE_KEY = "sb_publishable_vhHGhg9CqIMjrrOwdVwFeg_vEBQGArF"; 
         
-        const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+        // Değişken ismi 'mySupabase' olarak değiştirildi
+        const mySupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Mesajları Ekranda Listeleme
-        function renderMessages(msgs) {
-            const container = document.getElementById('chat-messages');
-            if (!container) return;
-            container.innerHTML = '';
-            msgs.forEach(m => {
-                const div = document.createElement('div');
-                div.className = 'msg';
-                div.innerHTML = `<div class="user">> ${m.username}</div><div>${m.text}</div>`;
-                container.appendChild(div);
-            });
-            container.scrollTop = container.scrollHeight;
-        }
-
-        // Mesaj Gönderme Fonksiyonu
         async function sendMessage() {
-            const userInp = document.getElementById('chat-username');
-            const textInp = document.getElementById('chat-text');
+            const userInp = document.getElementById('chat-username').value;
+            const textInp = document.getElementById('chat-text').value;
             
-            if(!textInp || !textInp.value.trim()) return;
+            if(!textInp.trim()) return;
 
-            const newMsg = {
-                username: userInp ? (userInp.value.trim() || "Anonim") : "Anonim",
-                text: textInp.value.trim()
-            };
-
-            if (supabase) {
-                const { error } = await supabase.from('messages').insert([newMsg]);
-                if (error) {
-                    console.error("Mesaj gönderilirken hata oluştu:", error);
-                }
-            }
-            
-            textInp.value = '';
+            await mySupabase.from('messages').insert([{ username: userInp, text: textInp }]);
+            document.getElementById('chat-text').value = '';
         }
 
-        // Enter tuşu kontrolü
-        function handleKeyPress(e) {
-            if (e.key === 'Enter') sendMessage();
-        }
-
-        // Veritabanından Mesajları Çekme
         async function fetchMessages() {
-            if (supabase) {
-                let { data: messages, error } = await supabase
-                    .from('messages')
-                    .select('*')
-                    .order('id', { ascending: true })
-                    .limit(50);
-                
-                if (messages) {
-                    renderMessages(messages);
-                } else if (error) {
-                    console.error("Mesajlar çekilirken hata oluştu:", error);
-                }
+            const { data } = await mySupabase.from('messages').select('*').order('id', { ascending: true });
+            if (data) {
+                const container = document.getElementById('chat-messages');
+                container.innerHTML = data.map(m => `<div class="msg"><div class="user">> ${m.username}</div><div>${m.text}</div></div>`).join('');
+                container.scrollTop = container.scrollHeight;
             }
         }
 
-        // Canlı Dinleme (Realtime)
-        function listenRealtime() {
-            if (supabase) {
-                supabase
-                    .channel('public:messages')
-                    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                        fetchMessages();
-                    })
-                    .subscribe();
-            }
-        }
-
-        // Sayfa Yüklendiğinde Çalıştır
-        window.onload = () => { 
-            if (supabase) {
-                fetchMessages();
-                listenRealtime();
-            }
-        };
+        mySupabase.channel('public:messages').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, fetchMessages).subscribe();
+        
+        fetchMessages();
     </script>
 </body>
 </html>
