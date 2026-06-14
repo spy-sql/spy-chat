@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>SPY Chat v2</title>
+    <title>SPY Chat v3</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background-color: #050911; color: #fff; font-family: monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
@@ -33,17 +33,18 @@
         "sb_publishable_vhHGhg9CqIMjrrOwdVwFeg_vEBQGArF"
     );
 
-    // İsim sabitleme mantığı
     const usernameInput = document.getElementById('username');
     const savedName = localStorage.getItem('spy_username');
-    if (savedName) {
-        usernameInput.value = savedName;
-        usernameInput.disabled = true; // İsmi değiştiremesin
-    }
+    if (savedName) { usernameInput.value = savedName; usernameInput.disabled = true; }
 
     let userId = localStorage.getItem('spy_uid') || 'U-' + Math.floor(Math.random()*10000);
     localStorage.setItem('spy_uid', userId);
-    let isAdmin = localStorage.getItem('is_admin') === 'true';
+
+    // Admin durumunu veritabanından (admins tablosundan) doğrulayacağız
+    async function isAdminCheck() {
+        const { data } = await supabaseClient.from('admins').select('user_id').eq('user_id', userId);
+        return data && data.length > 0;
+    }
 
     async function sha256(message) {
         const msgBuffer = new TextEncoder().encode(message);
@@ -55,9 +56,10 @@
         const pass = prompt("Admin Şifresini Girin:");
         const hashedInput = await sha256(pass);
         if (hashedInput === "b0ffff3c2299551401bdfcf35ea9be8283c0aab612cc0241c5d813e4f0f2a393") {
-            localStorage.setItem('is_admin', 'true');
-            isAdmin = true;
-            alert("Admin yetkisi aktif!");
+            // Şifre doğruysa veritabanındaki 'admins' tablosuna ID'sini ekle
+            await supabaseClient.from('admins').insert([{ user_id: userId }]);
+            alert("Admin yetkisi başarıyla tanımlandı!");
+            location.reload();
         } else {
             alert("Hatalı şifre!");
         }
@@ -67,15 +69,17 @@
         const user = usernameInput.value.trim();
         const text = document.getElementById('message').value.trim();
         if(!user || !text) return;
-
-        // İlk defa isim giriyorsa kaydet ve kilitle
+        
         if (!localStorage.getItem('spy_username')) {
             localStorage.setItem('spy_username', user);
             usernameInput.disabled = true;
         }
 
+        // Admin olup olmadığını sorgula
+        const adminStatus = await isAdminCheck();
+        
         await supabaseClient.from('messages').insert([{ 
-            username: user, text: text, user_id: userId, is_admin: isAdmin 
+            username: user, text: text, user_id: userId, is_admin: adminStatus 
         }]);
         document.getElementById('message').value = '';
     }
