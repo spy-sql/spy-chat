@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPY Chat - Global Room</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        /* Siber Temalı CSS Tasarımı */
+        * { box-sizing: border-box; }
+        body { 
+            margin: 0; 
+            background-color: #050911; 
+            color: #fff; 
+            font-family: 'Courier New', Courier, monospace; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* Ana Chat Penceresi */
+        #chat-container { 
+            width: 100%; 
+            max-width: 800px; 
+            height: 90vh; 
+            background: #0b111e; 
+            border: 2px solid #00f2ff; 
+            border-radius: 8px; 
+            display: flex; 
+            flex-direction: column; 
+            box-shadow: 0 0 25px rgba(0, 242, 255, 0.25); 
+        }
+
+        /* Üst Panel (Header) */
+        #chat-header { 
+            background: #101a2c; 
+            padding: 15px; 
+            font-weight: bold; 
+            font-size: 16px;
+            color: #00f2ff; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 2px solid #00f2ff;
+            text-shadow: 0 0 5px rgba(0, 242, 255, 0.5);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background-color: #39ff14;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 8px #39ff14;
+        }
+
+        /* Mesaj Alanı */
+        #chat-messages { 
+            flex: 1; 
+            padding: 20px; 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+        }
+
+        /* Mesaj Kutuları */
+        .msg { 
+            background: #131c2e; 
+            padding: 12px; 
+            border-radius: 6px; 
+            border-left: 4px solid #ff00ea; 
+            word-break: break-word;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        .msg .user { 
+            color: #00f2ff; 
+            font-weight: bold; 
+            font-size: 12px; 
+            margin-bottom: 5px; 
+        }
+
+        /* Alt Giriş Paneli */
+        #chat-input-area { 
+            display: flex; 
+            padding: 15px; 
+            gap: 10px; 
+            border-top: 1px solid #1a263f; 
+            background: #0b111e; 
+            border-radius: 0 0 8px 8px;
+        }
+
+        #chat-username { 
+            width: 120px; 
+            background: #131c2e; 
+            border: 1px solid #1a263f; 
+            color: #00f2ff; 
+            padding: 12px; 
+            border-radius: 4px; 
+            font-weight: bold;
+            text-align: center;
+        }
+
+        #chat-text { 
+            flex: 1; 
+            background: #131c2e; 
+            border: 1px solid #00f2ff; 
+            color: #fff; 
+            padding: 12px; 
+            border-radius: 4px; 
+            font-family: inherit;
+        }
+
+        #chat-text:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
+        }
+
+        #chat-send { 
+            background: #00f2ff; 
+            border: none; 
+            color: #050911; 
+            padding: 0 25px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            border-radius: 4px; 
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        #chat-send:hover { 
+            background: #ff00ea; 
+            color: #fff; 
+            box-shadow: 0 0 10px #ff00ea;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="chat-container">
+        <div id="chat-header">
+            <span>⚡ SPY NET CHAT // GLOBAL_ROOM</span>
+            <div>
+                <span class="status-dot"></span> Online
+            </div>
+        </div>
+        
+        <div id="chat-messages">
+            </div>
+        
+        <div id="chat-input-area">
+            <input type="text" id="chat-username" placeholder="Rumuz" value="Spy_">
+            <input type="text" id="chat-text" placeholder="Güvenli mesaj gönder..." onkeypress="handleKeyPress(event)">
+            <button id="chat-send" onclick="sendMessage()">GÖNDER</button>
+        </div>
+    </div>
+
+    <script>
+        // --- SUPABASE BAĞLANTISI ---
+        // Buraya kendi Supabase panelinden aldığın güncel bilgileri yapıştır:
+        const SUPABASE_URL = "https://fgfqczltsnwybvduecbs.supabase.co"; 
+        const SUPABASE_KEY = "sb_publishable_vhHGhg9CqIMjrrOwdVwFeg_vEBQGArF"; 
+        
+        const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+        // Geçici Hafıza (Veritabanı anahtarını ekleyene kadar test etmen için)
+        let localMessages = [
+            { username: "Sistem", text: "Chat odası başarıyla kuruldu. Mesajlaşmaya başlayabilirsiniz." }
+        ];
+
+        // Mesajları Ekranda Listeleme
+        function renderMessages(msgs) {
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = '';
+            msgs.forEach(m => {
+                const div = document.createElement('div');
+                div.className = 'msg';
+                div.innerHTML = `<div class="user">> ${m.username}</div><div>${m.text}</div>`;
+                container.appendChild(div);
+            });
+            // Yeni mesaj gelince otomatik en aşağı kaydırır
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Mesaj Gönderme Fonksiyonu
+        function sendMessage() {
+            const userInp = document.getElementById('chat-username');
+            const textInp = document.getElementById('chat-text');
+            
+            if(!textInp.value.trim()) return;
+
+            const newMsg = {
+                username: userInp.value.trim() || "Anonim",
+                text: textInp.value.trim()
+            };
+
+            // Canlı veritabanı anahtarı girildiyse veriyi Supabase'e yolla
+            if (supabase && SUPABASE_KEY !== "sb_publishable_vhHGhg9CqIMjrrOwdVwFeg_vEBQGArF") {
+                supabase.from('messages').insert([newMsg]).then(() => {
+                    fetchMessages(); // Gönderdikten sonra listeyi yenile
+                });
+            } else {
+                // Yoksa geçici test hafızasına ekle
+                localMessages.push(newMsg);
+                renderMessages(localMessages);
+            }
+            
+            textInp.value = '';
+        }
+
+        // Enter tuşu kontrolü
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') sendMessage();
+        }
+
+        // Veritabanından Mesajları Çekme (Eski mesajları yükler)
+        async function fetchMessages() {
+            if (supabase && SUPABASE_KEY !== "sb_publishable_vhHGhg9CqIMjrrOwdVwFeg_vEBQGArF") {
+                let { data: messages, error } = await supabase
+                    .from('messages')
+                    .select('*')
+                    .order('id', { ascending: true })
+                    .limit(50); // Son 50 mesajı getirir
+                
+                if (messages) renderMessages(messages);
+            }
+        }
+
+        // Canlı Dinleme (Realtime) Odadaki herkesin mesajını anlık düşürür
+        function listenRealtime() {
+            if (supabase && SUPABASE_KEY !== "sb_publishable_vhHGhg9CqIMjrrOwdVwFeg_vEBQGArF") {
+                supabase
+                    .channel('public:messages')
+                    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+                        fetchMessages(); // Yeni mesaj geldiğinde mesajları tekrar çek
+                    })
+                    .subscribe();
+            }
+        }
+
+        // Sayfa Yüklendiğinde Çalıştır
+        window.onload = () => { 
+            if (supabase && SUPABASE_KEY !== "sb_publishable_vhHGhg9CqIMjrrOwdVwFeg_vEBQGArF") {
+                fetchMessages();
+                listenRealtime();
+            } else {
+                renderMessages(localMessages); 
+            }
+        };
+    </script>
+</body>
+</html>
