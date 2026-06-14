@@ -28,76 +28,7 @@
 </div>
 
 <script>
-    const supabaseClient = window.supabase.createClient(
-        "https://fgfqczltsnwybvduecbs.supabase.co", 
-        "sb_publishable_vhHGhg9CqIMjrrOwdVwFeg_vEBQGArF"
-    );
-
-    const usernameInput = document.getElementById('username');
-    const savedName = localStorage.getItem('spy_username');
-    if (savedName) { usernameInput.value = savedName; usernameInput.disabled = true; }
-
-    let userId = localStorage.getItem('spy_uid') || 'U-' + Math.floor(Math.random()*10000);
-    localStorage.setItem('spy_uid', userId);
-
-    // Admin durumunu veritabanından (admins tablosundan) doğrulayacağız
-    async function isAdminCheck() {
-        const { data } = await supabaseClient.from('admins').select('user_id').eq('user_id', userId);
-        return data && data.length > 0;
-    }
-
-    async function sha256(message) {
-        const msgBuffer = new TextEncoder().encode(message);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
-    async function loginAdmin() {
-        const pass = prompt("Admin Şifresini Girin:");
-        const hashedInput = await sha256(pass);
-        if (hashedInput === "b0ffff3c2299551401bdfcf35ea9be8283c0aab612cc0241c5d813e4f0f2a393") {
-            // Şifre doğruysa veritabanındaki 'admins' tablosuna ID'sini ekle
-            await supabaseClient.from('admins').insert([{ user_id: userId }]);
-            alert("Admin yetkisi başarıyla tanımlandı!");
-            location.reload();
-        } else {
-            alert("Hatalı şifre!");
-        }
-    }
-
-    async function sendMessage() {
-        const user = usernameInput.value.trim();
-        const text = document.getElementById('message').value.trim();
-        if(!user || !text) return;
-        
-        if (!localStorage.getItem('spy_username')) {
-            localStorage.setItem('spy_username', user);
-            usernameInput.disabled = true;
-        }
-
-        // Admin olup olmadığını sorgula
-        const adminStatus = await isAdminCheck();
-        
-        await supabaseClient.from('messages').insert([{ 
-            username: user, text: text, user_id: userId, is_admin: adminStatus 
-        }]);
-        document.getElementById('message').value = '';
-    }
-
-    async function fetchMessages() {
-        const { data } = await supabaseClient.from('messages').select('*').order('id', { ascending: true });
-        const container = document.getElementById('chat-messages');
-        container.innerHTML = data.map(m => `
-            <div class="msg">
-                <span class="user-id">ID: ${m.user_id}</span>
-                <b>${m.is_admin ? '👑 ' : ''}${m.username}:</b> ${m.text}
-            </div>
-        `).join('');
-        container.scrollTop = container.scrollHeight;
-    }
-
-    supabaseClient.channel('any').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, fetchMessages).subscribe();
-    fetchMessages();
+    const _0x1929d3=_0x5648;function _0x5648(_0x516ebe,_0x27d354){_0x516ebe=_0x516ebe-0x1c5;const _0x10545e=_0x1054();let _0x564814=_0x10545e[_0x516ebe];return _0x564814;}(function(_0x387bea,_0x281919){const _0x22acc2=_0x5648,_0x3a3f50=_0x387bea();while(!![]){try{const _0x50f70b=parseInt(_0x22acc2(0x1d9))/0x1+parseInt(_0x22acc2(0x1f6))/0x2+parseInt(_0x22acc2(0x1c6))/0x3+-parseInt(_0x22acc2(0x1e0))/0x4+-parseInt(_0x22acc2(0x1db))/0x5+parseInt(_0x22acc2(0x1d5))/0x6*(parseInt(_0x22acc2(0x1df))/0x7)+-parseInt(_0x22acc2(0x1f1))/0x8;if(_0x50f70b===_0x281919)break;else _0x3a3f50['push'](_0x3a3f50['shift']());}catch(_0x56724a){_0x3a3f50['push'](_0x3a3f50['shift']());}}}(_0x1054,0x40a21));const supabaseClient=window[_0x1929d3(0x1cd)][_0x1929d3(0x1ee)]('https://fgfqczltsnwybvduecbs.supabase.co',_0x1929d3(0x1ec)),usernameInput=document[_0x1929d3(0x1fa)]('username'),savedName=localStorage[_0x1929d3(0x1d1)]('spy_username');savedName&&(usernameInput[_0x1929d3(0x1dc)]=savedName,usernameInput[_0x1929d3(0x1ea)]=!![]);let userId=localStorage[_0x1929d3(0x1d1)](_0x1929d3(0x1f2))||'U-'+Math[_0x1929d3(0x1ed)](Math['random']()*0x2710);localStorage['setItem'](_0x1929d3(0x1f2),userId);async function isAdminCheck(){const _0x35f575=_0x1929d3,{data:_0x3df4dd}=await supabaseClient[_0x35f575(0x1d0)](_0x35f575(0x1e2))[_0x35f575(0x1d8)](_0x35f575(0x1f9))['eq'](_0x35f575(0x1f9),userId);return _0x3df4dd&&_0x3df4dd['length']>0x0;}async function sha256(_0x3c2479){const _0x35b7d9=_0x1929d3,_0x2aab9c=new TextEncoder()['encode'](_0x3c2479),_0x5bc280=await crypto[_0x35b7d9(0x1ce)][_0x35b7d9(0x1f0)](_0x35b7d9(0x1e6),_0x2aab9c);return Array[_0x35b7d9(0x1d0)](new Uint8Array(_0x5bc280))[_0x35b7d9(0x1c9)](_0x1b1f06=>_0x1b1f06[_0x35b7d9(0x1f3)](0x10)[_0x35b7d9(0x1cb)](0x2,'0'))[_0x35b7d9(0x1d2)]('');}async function loginAdmin(){const _0x48f060=_0x1929d3,_0x22d452=prompt(_0x48f060(0x1ca)),_0x55f38b=await sha256(_0x22d452);_0x55f38b===_0x48f060(0x1d7)?(await supabaseClient['from'](_0x48f060(0x1e2))[_0x48f060(0x1dd)]([{'user_id':userId}]),alert(_0x48f060(0x1d6)),location[_0x48f060(0x1f4)]()):alert(_0x48f060(0x1e7));}async function sendMessage(){const _0x463c27=_0x1929d3,_0x19970b=usernameInput[_0x463c27(0x1dc)][_0x463c27(0x1cf)](),_0x45197c=document[_0x463c27(0x1fa)](_0x463c27(0x1cc))[_0x463c27(0x1dc)]['trim']();if(!_0x19970b||!_0x45197c)return;!localStorage[_0x463c27(0x1d1)](_0x463c27(0x1d4))&&(localStorage[_0x463c27(0x1ef)](_0x463c27(0x1d4),_0x19970b),usernameInput[_0x463c27(0x1ea)]=!![]);const _0x51bf29=await isAdminCheck();await supabaseClient['from'](_0x463c27(0x1e1))[_0x463c27(0x1dd)]([{'username':_0x19970b,'text':_0x45197c,'user_id':userId,'is_admin':_0x51bf29}]),document[_0x463c27(0x1fa)](_0x463c27(0x1cc))[_0x463c27(0x1dc)]='';}async function fetchMessages(){const _0x25746c=_0x1929d3,{data:_0x2097f3}=await supabaseClient[_0x25746c(0x1d0)](_0x25746c(0x1e1))[_0x25746c(0x1d8)]('*')[_0x25746c(0x1eb)]('id',{'ascending':!![]}),_0x2c7fa3=document[_0x25746c(0x1fa)](_0x25746c(0x1de));_0x2c7fa3[_0x25746c(0x1e8)]=_0x2097f3[_0x25746c(0x1c9)](_0x56bb97=>'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22msg\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22user-id\x22>ID:\x20'+_0x56bb97[_0x25746c(0x1f9)]+_0x25746c(0x1e4)+(_0x56bb97[_0x25746c(0x1f7)]?_0x25746c(0x1f8):'')+_0x56bb97[_0x25746c(0x1e9)]+_0x25746c(0x1f5)+_0x56bb97['text']+_0x25746c(0x1e3))[_0x25746c(0x1d2)](''),_0x2c7fa3['scrollTop']=_0x2c7fa3['scrollHeight'];}supabaseClient[_0x1929d3(0x1e5)](_0x1929d3(0x1c5))['on'](_0x1929d3(0x1c7),{'event':_0x1929d3(0x1d3),'schema':_0x1929d3(0x1da),'table':'messages'},fetchMessages)[_0x1929d3(0x1c8)](),fetchMessages();function _0x1054(){const _0x4570a9=['channel','SHA-256','Hatalı\x20şifre!','innerHTML','username','disabled','order','sb_publishable_vhHGhg9CqIMjrrOwdVwFeg_vEBQGArF','floor','createClient','setItem','digest','3201792ciwXqA','spy_uid','toString','reload',':</b>\x20','570770sqDwkp','is_admin','👑\x20','user_id','getElementById','any','689022vEgUQp','postgres_changes','subscribe','map','Admin\x20Şifresini\x20Girin:','padStart','message','supabase','subtle','trim','from','getItem','join','INSERT','spy_username','1225782ZMYOMj','Admin\x20yetkisi\x20başarıyla\x20tanımlandı!','b0ffff3c2299551401bdfcf35ea9be8283c0aab612cc0241c5d813e4f0f2a393','select','242443xrjMYJ','public','2080730EEuxPU','value','insert','chat-messages','14aimFNO','339956SnMieg','messages','admins','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20','</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<b>'];_0x1054=function(){return _0x4570a9;};return _0x1054();}
 </script>
 </body>
 </html>
