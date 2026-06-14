@@ -2,16 +2,17 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>SPY Chat</title>
+    <title>SPY Chat v2</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background-color: #050911; color: #fff; font-family: monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         #chat-container { width: 800px; height: 90vh; border: 2px solid #00f2ff; display: flex; flex-direction: column; background: #0b111e; }
         #chat-messages { flex: 1; padding: 20px; overflow-y: auto; }
-        .msg { margin-bottom: 10px; border-left: 3px solid #ff00ea; padding-left: 10px; }
+        .msg { margin-bottom: 10px; border-left: 3px solid #ff00ea; padding-left: 10px; padding-top: 5px; }
+        .user-id { font-size: 9px; color: #555; display: block; }
         #chat-input-area { display: flex; padding: 10px; border-top: 1px solid #00f2ff; }
         input, button { padding: 10px; background: #131c2e; border: 1px solid #00f2ff; color: #fff; }
-        input { flex: 1; }
+        #admin-btn { border: 1px solid #ff00ea; color: #ff00ea; cursor: pointer; font-size: 10px; margin-right: 5px; }
     </style>
 </head>
 <body>
@@ -19,6 +20,7 @@
 <div id="chat-container">
     <div id="chat-messages"></div>
     <div id="chat-input-area">
+        <button id="admin-btn" onclick="loginAdmin()">ADMİN</button>
         <input type="text" id="username" value="Spy_" style="width: 100px;">
         <input type="text" id="message" placeholder="Mesaj yaz...">
         <button onclick="sendMessage()">GÖNDER</button>
@@ -26,31 +28,56 @@
 </div>
 
 <script>
-    // 1. İsim çakışmasını önlemek için 'supabaseClient' ismini kullandık
     const supabaseClient = window.supabase.createClient(
         "https://fgfqczltsnwybvduecbs.supabase.co", 
         "sb_publishable_vhHGhg9CqIMjrrOwdVwFeg_vEBQGArF"
     );
+
+    // Kullanıcı ID'sini tarayıcı hafızasına al (Kalıcı ID)
+    let userId = localStorage.getItem('spy_uid') || 'U-' + Math.floor(Math.random()*10000);
+    localStorage.setItem('spy_uid', userId);
+    
+    // Admin yetkisi kontrolü
+    let isAdmin = localStorage.getItem('is_admin') === 'true';
+
+    function loginAdmin() {
+        const pass = prompt("Admin Şifresini Girin:");
+        if (pass === "spy123") { // Buraya istediğin şifreyi yaz
+            localStorage.setItem('is_admin', 'true');
+            isAdmin = true;
+            alert("Admin yetkisi aktif edildi!");
+        } else {
+            alert("Hatalı şifre!");
+        }
+    }
 
     async function sendMessage() {
         const user = document.getElementById('username').value;
         const text = document.getElementById('message').value;
         if(!text.trim()) return;
 
-        await supabaseClient.from('messages').insert([{ username: user, text: text }]);
+        await supabaseClient.from('messages').insert([{ 
+            username: user, 
+            text: text,
+            user_id: userId,
+            is_admin: isAdmin 
+        }]);
         document.getElementById('message').value = '';
     }
 
     async function fetchMessages() {
         const { data } = await supabaseClient.from('messages').select('*').order('id', { ascending: true });
         const container = document.getElementById('chat-messages');
-        container.innerHTML = data.map(m => `<div class="msg"><b>${m.username}:</b> ${m.text}</div>`).join('');
+        container.innerHTML = data.map(m => `
+            <div class="msg">
+                <span class="user-id">ID: ${m.user_id}</span>
+                <b>${m.is_admin ? '👑 ' : ''}${m.username}:</b> ${m.text}
+            </div>
+        `).join('');
         container.scrollTop = container.scrollHeight;
     }
 
-    // Gerçek zamanlı dinleyici
     supabaseClient.channel('any').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, fetchMessages).subscribe();
-
     fetchMessages();
 </script>
 </body>
